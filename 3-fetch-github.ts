@@ -38,13 +38,14 @@ function extractRepo(p: NpmPackage): GithubPaths | null {
   return candidates.map(extractPaths)[0] ?? null;
 }
 
-const depsJson = await Deno.readTextFile(Deno.args[0]);
-const deps: Step1Result = JSON.parse(depsJson);
+const json1 = await Deno.readTextFile(Deno.args[0]);
+const result1: Step1Result = JSON.parse(json1);
+const pkgs = Object.values(result1);
 
 const npmFundingsJson = await Deno.readTextFile(Deno.args[1]);
 const npmFundings: Step2Result = JSON.parse(npmFundingsJson);
 
-const noFundingPackages = deps.filter((p) => npmFundings[p.name] === null);
+const noFundingPackages = pkgs.filter((p) => npmFundings[p.name] === null);
 
 const nameToPathsMap: { [name: string]: GithubPaths | null } = noFundingPackages
   .reduce((tmp, p) => {

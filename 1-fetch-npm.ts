@@ -1,15 +1,25 @@
 import { getPackage, NpmPackage } from "./lib/npm.ts";
 
-const json = await Deno.readTextFile(Deno.args[0]);
-const obj: NpmPackage = JSON.parse(json);
+const pkgJson = await Deno.readTextFile(Deno.args[0]);
+const pkgObj: NpmPackage = JSON.parse(pkgJson);
 const deps = {
-  ...obj.dependencies,
-  ...obj.devDependencies,
+  ...pkgObj.dependencies,
+  ...pkgObj.devDependencies,
 };
 const names = Object.keys(deps);
 
-const packages = await Promise.all(names.map((p) => getPackage(p)));
+const pkgs = await Promise.all(names.map((p) => getPackage(p)));
 
-export type Step1Result = NpmPackage[];
+export type Step1Result = {[name: string]: NpmPackage};
 
-console.log(JSON.stringify(packages, undefined, "  "));
+const result = pkgs.reduce((tmp: Step1Result, p) => {
+  if (!p) {
+    return tmp;
+  }
+  return {
+    ...tmp,
+    [p.name]: p,
+  };
+}, {});
+
+console.log(JSON.stringify(result, undefined, "  "));

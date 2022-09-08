@@ -1,7 +1,5 @@
+import { Step1Result } from "./1-fetch-npm.ts";
 import { NpmPackage } from "./lib/npm.ts";
-
-const json = await Deno.readTextFile(Deno.args[0]);
-const packages: NpmPackage[] = JSON.parse(json);
 
 function extractFunding(p: NpmPackage): string | null {
   const f = p.funding;
@@ -19,7 +17,10 @@ function extractFunding(p: NpmPackage): string | null {
 
 export type Step2Result = { [name: string]: string | null };
 
-const result = packages.reduce((tmp, p) => {
+const json1 = await Deno.readTextFile(Deno.args[0]);
+const result1: Step1Result = JSON.parse(json1);
+const pkgs = Object.values(result1);
+const result = pkgs.reduce((tmp, p) => {
   return {
     ...tmp,
     [p.name]: extractFunding(p),
