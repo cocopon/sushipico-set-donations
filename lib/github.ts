@@ -9,7 +9,7 @@ interface GithubRepo {
   default_branch: string;
 }
 
-export async function getRepo(paths: GithubPaths): Promise<GithubRepo> {
+export async function getRepo(paths: GithubPaths): Promise<GithubRepo | null> {
   const proc = Deno.run({
     cmd: [
       "gh",
@@ -23,6 +23,9 @@ export async function getRepo(paths: GithubPaths): Promise<GithubRepo> {
   });
   const o = await proc.output();
   const json = new TextDecoder().decode(o);
+  if (json === "") {
+    return null;
+  }
   return JSON.parse(json) as GithubRepo;
 }
 

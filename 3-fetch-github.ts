@@ -9,7 +9,10 @@ import {
 import { NpmPackage } from "./lib/npm.ts";
 
 function extractPaths(url: string): GithubPaths | null {
-  const patterns = [/github.com\/(.+?)\/(.+?)(\/|\.git|#.+|$)/];
+  const patterns = [
+    /github.com\/(.+?)\/(.+?)(\/|\.git|#.+|$)/,
+    /^([^/]+?)\/([^/]+?)$/,
+  ];
 
   return patterns.reduce((result: GithubPaths | null, pat) => {
     if (result) {
@@ -29,7 +32,11 @@ function extractRepo(p: NpmPackage): GithubPaths | null {
   const candidates = [];
 
   if (p.repository) {
-    candidates.push(p.repository.url);
+    if (typeof p.repository === "string") {
+      candidates.push(p.repository);
+    } else {
+      candidates.push(p.repository.url);
+    }
   }
   if (p.homepage) {
     candidates.push(p.homepage);
@@ -65,7 +72,9 @@ await Promise.all(
       return null;
     }
     const repo = await getRepo(paths);
-    result[name] = await getGithubFunding(paths, repo.default_branch);
+    if (repo) {
+      result[name] = await getGithubFunding(paths, repo.default_branch);
+    }
   }),
 );
 console.log(JSON.stringify(result, undefined, "  "));

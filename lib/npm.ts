@@ -17,7 +17,7 @@ export interface NpmPackage {
   devDependencies?: { [name: string]: string };
   funding?: string | FundingEntry | FundingEntry[];
   homepage?: string;
-  repository?: RepositoryEntry;
+  repository?: string | RepositoryEntry;
 }
 
 export async function getPackage(name: string): Promise<NpmPackage | null> {
@@ -28,8 +28,11 @@ export async function getPackage(name: string): Promise<NpmPackage | null> {
   });
   const o = await proc.output();
   const json = new TextDecoder().decode(o);
-  const obj = JSON.parse(json);
+  if (json === "") {
+    return null;
+  }
 
+  const obj = JSON.parse(json);
   return obj
     ? {
       author: obj.author,
