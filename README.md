@@ -1,5 +1,5 @@
 # sushipico-set-donations
-Small scripts that extracts a donation list from package.json.
+Small scripts that create a donation list from package.json.
 
 ```
 % deno run 1-fetch-npm.ts    package.json 1.json --deep
