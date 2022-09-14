@@ -1,6 +1,8 @@
+import { parse } from "https://deno.land/std@0.155.0/flags/mod.ts";
 import { Step2Result } from "./2-extract-npm.ts";
 import { Step3Result } from "./3-fetch-github.ts";
 import { GithubFunding } from "./lib/github.ts";
+import { getScriptName } from "./lib/misc.ts";
 
 interface Converter {
   type: string;
@@ -33,10 +35,23 @@ function getUrlsFromFunding(f: GithubFunding): string[] | null {
   }, null);
 }
 
-const json2 = await Deno.readTextFile(Deno.args[0]);
+const args = parse(Deno.args);
+const input2Path = args._[0];
+const input3Path = args._[1];
+const outputPath = args._[2];
+if (
+  typeof input2Path !== "string" || typeof input3Path !== "string" ||
+  typeof outputPath !== "string"
+) {
+  const scriptName = getScriptName(import.meta.url);
+  console.log(`deno run ${scriptName} result2.json result3.json out.tsv`);
+  Deno.exit(0);
+}
+
+const json2 = await Deno.readTextFile(input2Path);
 const result2: Step2Result = JSON.parse(json2);
 
-const json3 = await Deno.readTextFile(Deno.args[1]);
+const json3 = await Deno.readTextFile(input3Path);
 const result3: Step3Result = JSON.parse(json3);
 
 const names = Object.keys(result2);
@@ -75,4 +90,7 @@ const urlToNamesMap = entries.reduce(
 
 const urls = Object.keys(urlToNamesMap);
 const rows = urls.map((url) => [url, ...urlToNamesMap[url]]);
-console.log(rows.map((row) => row.join("\t")).join("\n"));
+await Deno.writeTextFile(
+  outputPath,
+  rows.map((row) => row.join("\t")).join("\n"),
+);

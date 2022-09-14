@@ -1,4 +1,5 @@
 import { parse } from "https://deno.land/std@0.155.0/flags/mod.ts";
+import { getScriptName, serial } from "./lib/misc.ts";
 import { getPackage, NpmPackage } from "./lib/npm.ts";
 
 function getDependencies(pkg: NpmPackage): string[] {
@@ -9,16 +10,14 @@ function getDependencies(pkg: NpmPackage): string[] {
 }
 
 async function fetchPackages(names: string[]): Promise<NpmPackage[]> {
-  return await names.reduce(async (tmp: Promise<NpmPackage[]>, name) => {
-    const pkg = await getPackage(name);
-    if (!pkg) {
-      return await tmp;
-    }
-    return [
-      ...await tmp,
-      pkg,
-    ];
-  }, Promise.resolve([]));
+  const result = await serial(names, async (name: string, index: number) => {
+    console.log(`Fetching package (${index + 1}/${names.length}) ${name}...`);
+
+    const p = await getPackage(name);
+    console.log("done.");
+    return p;
+  });
+  return result.filter((p) => p !== null) as NpmPackage[];
 }
 
 async function fetchSubpackages(pkgs: NpmPackage[]) {
@@ -35,7 +34,15 @@ async function fetchSubpackages(pkgs: NpmPackage[]) {
 }
 
 const args = parse(Deno.args);
-const pkgJson = await Deno.readTextFile(String(args._[0]));
+const inputPath = args._[0];
+const outputPath = args._[1];
+if (typeof inputPath !== "string" || typeof outputPath !== "string") {
+  const scriptName = getScriptName(import.meta.url);
+  console.log(`deno run ${scriptName} package.json out.json [--deep]`);
+  Deno.exit(0);
+}
+
+const pkgJson = await Deno.readTextFile(inputPath);
 const pkgObj: NpmPackage = JSON.parse(pkgJson);
 const names = getDependencies(pkgObj);
 const pkgs = await fetchPackages(names);
@@ -56,4 +63,7 @@ const result: Step1Result = [
   };
 }, {});
 
-console.log(JSON.stringify(result, undefined, "  "));
+await Deno.writeTextFile(
+  String(args._[1]),
+  JSON.stringify(result, undefined, "  "),
+);
