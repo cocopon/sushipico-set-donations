@@ -3,19 +3,33 @@ import { Step1Result } from "./1-fetch-npm.ts";
 import { getScriptName } from "./lib/misc.ts";
 import { NpmPackage } from "./lib/npm.ts";
 
+function extractCandidates(funding: unknown): string[] | null {
+	if (typeof funding === "string") {
+		return [funding];
+	}
+	if ("url" in funding) {
+		return [funding.url];
+	}
+	if (Array.isArray(funding)) {
+		return funding.reduce((tmp, item) => {
+			return [
+				...tmp,
+				...extractCandidates(item),
+			];
+		}, []);
+	}
+
+	return null;
+}
+
 function extractFunding(p: NpmPackage): string | null {
   const f = p.funding;
   if (!f) {
     return null;
   }
 
-  const candidates = typeof f === "string"
-    ? [f]
-    : "url" in f
-    ? [f.url]
-    : Array.isArray(f)
-    ? f.map((item) => item.url)
-    : null;
+	console.log(f);
+  const candidates = extractCandidates(f);
   const urls = candidates?.map((url) => {
     if (url.match(/^https:\/\/github\.com\/.+?\/.+?\?sponsor=1$/)) {
       // This can have multiple targets
